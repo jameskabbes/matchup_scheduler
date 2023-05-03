@@ -5,7 +5,7 @@ class Client( kabbes_matchup_scheduler.Scheduler ):
 
     _BASE_DICT = {}
 
-    def __init__( self, dict={} ):
+    def __init__( self, dict={}, **kwargs ):
 
         d = {}
         d.update( Client._BASE_DICT )
@@ -14,4 +14,4 @@ class Client( kabbes_matchup_scheduler.Scheduler ):
         self.Package = kabbes_client.Package( kabbes_matchup_scheduler._Dir, dict=d )
         self.cfg = self.Package.cfg
 
-        kabbes_matchup_scheduler.Scheduler.__init__( self )
+        kabbes_matchup_scheduler.Scheduler.__init__( self, **kwargs )

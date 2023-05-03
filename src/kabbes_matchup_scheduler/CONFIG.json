@@ -1,3 +1,17 @@
 {
-
+    "default_settings":{
+        "n_teams": 16,
+        "n_rounds": 8,
+        "teams_per_game": 2,
+        "track_locale": true,
+        "!export_Path":{
+            "$ref": "{{cwd.Dir}}",
+            "method":{
+                "name": "join_Path",
+                "kwargs":{
+                    "path": "schedule.csv"
+                }
+            }
+        }   
+    }
 }

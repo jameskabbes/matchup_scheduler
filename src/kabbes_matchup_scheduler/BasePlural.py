@@ -1,20 +1,20 @@
-from parent_class import ParentPluralDict
+from parent_class import ParentPluralList
+import random
 
-class BasePlural( ParentPluralDict ):
+class BasePlural( ParentPluralList ):
 
     Child = None
 
-    def __init__( self, scheduler, n ):
-        ParentPluralDict.__init__( self )
+    def __init__( self ):
+        ParentPluralList.__init__( self )
 
-        self.scheduler = scheduler
-        self.n = n
-        for i in range(self.n):
-            self.make_child( i )
+    def make_child( self, *args, **kwargs ):
+        return self.Child( *args, **kwargs )
 
-    def make_child( self, n ):
-        return self.Child( self, n )
+    def shuffle( self ):
+        random.shuffle( self.list )
 
-    def add( self, child ):
-        self._add( child.n, child )
+    def get_random_list( self ):
+        self.shuffle()
+        return self.list.copy()
 
