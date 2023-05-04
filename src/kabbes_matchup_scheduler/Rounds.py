@@ -5,22 +5,29 @@ class Rounds( BasePlural ):
 
     Child = Round
 
-    def __init__( self, Scheduler ):
+    def __init__( self ):
         BasePlural.__init__( self )
-        self.Scheduler = Scheduler
 
-    def init_n_rounds( self, n: int ):
+    def init( self, n: int ):
         
-        """generates n number of random rounds"""
-
         for i in range(n):
             new_round = self.make_child( self )
             self._add( new_round )
 
-    def schedule( self ):
-
+    def matchup_shuffle( self ):
         for Round in self:
-            Round.schedule()
+            Round.Matchups.shuffle()
+
+    def schedule( self ):
+        
+        for i in range(len(self)):
+            print ()
+            print ('---------------------')
+            print ('ROUND: ' + str(i))
+            print ('---------------------')
+            print ()
+            self.list[i].schedule()
+            self.list[i].print()
 
     def export( self ):
 

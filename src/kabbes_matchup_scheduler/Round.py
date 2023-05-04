@@ -1,5 +1,4 @@
-from kabbes_matchup_scheduler import BaseSingle, Matchups, Matchup, Teams
-import pandas as pd
+from kabbes_matchup_scheduler import BaseSingle, Matchups, Teams
 
 class Round( BaseSingle ):
 
@@ -9,21 +8,24 @@ class Round( BaseSingle ):
 
         BaseSingle.__init__( self )
         self.Rounds = Rounds
-        self.Matchups = Matchups( self )
+        self.Teams = Teams( self.Rounds.Scheduler.Teams.list )
+        self.Matchups = Matchups()
+        self.Matchups.Round = self
 
     def schedule( self ):
+        
+        self.Matchups.Teams = Teams( self.Teams.list )
+        for i in range( self.Rounds.Scheduler.round_schedule_attempts ):
 
-        teams = self.Rounds.Scheduler.Teams.get_random_list()
+            if self.Matchups.schedule():
+                return
+            
+            #Refresh Matchups and Teams
+            self.Matchups.Teams = Teams( self.Teams.list )
+            self.Matchups.shuffle()
+            self.Matchups.list = []
 
-        while len(teams) >= self.Rounds.Scheduler.teams_per_game:
-            matchup_Teams = Teams( self.Rounds.Scheduler )
-            for i in range(self.Rounds.Scheduler.teams_per_game):
-                matchup_Teams._add( teams.pop() )
-
-            new_matchup = self.Matchups.make_child( self, matchup_Teams )
-            self.Matchups._add( new_matchup )
-
-        self.Matchups.shuffle()
+        print ('ERROR: Max scheduling attempts reached')        
 
     def export( self ):
         return self.Matchups.export()

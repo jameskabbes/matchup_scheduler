@@ -21,13 +21,20 @@ class Scheduler( ParentClass ):
 
     def run( self ):
 
-        self.Teams = Teams( self )
-        self.Teams.init_n_teams( self.n_teams )
-        self.Rounds = Rounds( self )
-        self.Rounds.init_n_rounds( self.n_rounds )
+        self.Teams = Teams()
+        self.Teams.Scheduler = self
+        self.Teams.init( self.n_teams )
+
+        self.Rounds = Rounds()
+        self.Rounds.Scheduler = self
+        self.Rounds.init( self.n_rounds )
 
         self.Rounds.schedule()
-        self.Rounds.shuffle()
+
+        if self.shuffle:
+            self.Rounds.matchup_shuffle()
+            self.Rounds.shuffle()
+
         self.export()
 
     def export( self, export_path = '' ):

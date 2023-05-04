@@ -8,11 +8,7 @@ _repo_Dir = _src_Dir.ascend()
 from .BasePlural import BasePlural
 from .BaseSingle import BaseSingle
 
-from .Team import Team
-from .Teams import Teams
-
-from .Matchup import Matchup
-from .Matchups import Matchups
+from .Team import Team, Teams, Matchup, Matchups
 
 from .Round import Round
 from .Rounds import Rounds
