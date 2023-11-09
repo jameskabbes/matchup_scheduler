@@ -1,12 +1,12 @@
 {
     "default_settings":{
-        "n_teams": 9,
+        "n_teams": 16,
         "n_rounds": 6,
-        "teams_per_matchup": 3,
+        "teams_per_matchup": 2,
         "matchups_per_round": null,
         "track_locale": true,
         "round_schedule_attempts": 20,
-        "shuffle": false,
+        "shuffle": true,
         "!export_Path":{
             "$ref": "{{cwd.Dir}}",
             "method":{

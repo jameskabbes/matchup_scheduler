@@ -1,6 +1,6 @@
 from parent_class import ParentClass
 from kabbes_matchup_scheduler import Teams, Rounds
-import py_starter as ps
+import py_seedlings as ps
 
 class Scheduler( ParentClass ):
 
