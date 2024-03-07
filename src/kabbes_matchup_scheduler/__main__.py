@@ -1,4 +1,4 @@
-import kabbes_matchup_scheduler
-client = kabbes_matchup_scheduler.Client()
-client.print_atts()
-client.run()
+from kabbes_matchup_scheduler.scheduler import Scheduler
+scheduler = Scheduler()
+
+print(scheduler.schedule)
