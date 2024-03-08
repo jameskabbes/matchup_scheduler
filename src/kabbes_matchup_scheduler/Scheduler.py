@@ -25,43 +25,33 @@ DEFAULT_SCHEDULER_CONFIG: SchedulerConfig = {
     'export_Path': pathlib.Path('schedule.csv')
 }
 
-ConstraintConfig = TypedDict('ConstraintConfig', {
-    'min': int,
-    'max': int
-})
-
-OpponentCountConfig = TypedDict('OpponentCountConfig', {
-    'count': ConstraintConfig,
-    'locale': ConstraintConfig
-})
-
-
-class ConstraintsConfig(TypedDict):
-    n_matchups: ConstraintConfig
-    opponent_count: OpponentCountConfig
-    locale_count: ConstraintConfig
-
 
 class Scheduler:
 
     config: SchedulerConfig
     schedule: types.ScheduleType
     teams: list[team.Team]
-    constraints: ConstraintsConfig
+    constraints: types.ConstraintsConfig
+    available_team_ids_by_round: list[set[types.IDType]]
 
     def __init__(self, config: SchedulerConfig = {}, **default_config_overwrite):
 
-        if config == {}:
-            config = DEFAULT_SCHEDULER_CONFIG
+        # load config
+        self.config = config
+        if self.config == {}:
+            self.config = DEFAULT_SCHEDULER_CONFIG
 
         for key in default_config_overwrite:
-            config[key] = default_config_overwrite[key]
-
-        self.config = config
+            self.config[key] = default_config_overwrite[key]
 
         # fill in None values for matchups per round
         if self.config['matchups_per_round'] == None:
             self.config['matchups_per_round'] = self.config['n_teams'] // self.config['teams_per_matchup']
+
+        # each team can only play at most 1 time
+        else:
+            self.config['matchups_per_round'] = max(
+                self.config['matchups_per_round'], self.config['n_teams'] // self.config['teams_per_matchup'])
 
         # load schedule with empty matchups
         self.schedule: types.Schedule = []
@@ -75,9 +65,16 @@ class Scheduler:
         # load teams
         self.teams = []
         for i in range(self.config['n_teams']):
-            self.teams.append(team.Team(
-                self.config['n_teams'], self.config['teams_per_matchup']))
+            self.teams.append(team.Team(i,
+                                        self.config['n_teams'], self.config['teams_per_matchup']))
 
+        # load available teams
+        self.available_team_ids_by_round: list[set[types.IDType]] = []
+        for i in range(self.config['n_rounds']):
+            self.available_team_ids_by_round.append(
+                set(list(range(self.config['n_teams']))))
+
+        print(self.config)
         self.load_constraints()
         print(self.constraints)
 
@@ -111,10 +108,13 @@ class Scheduler:
             max_matchups_per_team / self.config['teams_per_matchup'])
 
         # 0.857, each team should play either 0 or 1 games against each opponent
+        opponent_matchup_frequency = (
+            self.config['teams_per_matchup'] - 1) / (self.config['n_teams'] - 1)
+
         min_matchups_per_opponent: int = math.floor(
-            min_matchups_per_team / self.config['n_teams'])
+            min_matchups_per_team * opponent_matchup_frequency)
         max_matchups_per_opponent: int = math.ceil(
-            max_matchups_per_team / self.config['n_teams'])
+            max_matchups_per_team * opponent_matchup_frequency)
 
         # 0.285, each team should play either 0 or 1 games against each opponent as home/away/other
         min_locales_per_matchups_per_opponent: int = math.floor(
@@ -122,7 +122,7 @@ class Scheduler:
         max_locales_per_matchups_per_opponent: int = math.ceil(
             max_matchups_per_opponent / self.config['teams_per_matchup'])
 
-        self.constraints: ConstraintsConfig = {
+        self.constraints: types.ConstraintsConfig = {
             'n_matchups': {
                 'min': min_matchups_per_team,
                 'max': max_matchups_per_team,
@@ -145,45 +145,45 @@ class Scheduler:
 
     def run(self):
 
-        self.available_team_ids_by_round: list[set[types.IDType]] = []
-        for i in range(len(self.rounds.n)):
-            self.available_team_ids_by_round.append(
-                set(self.teams.get_ids_list()))
-
         if self.backtrack(0, 0, 0):
             print('Found a solution!')
-            print(self.schedule)
+            self.print()
+
         else:
             print('No solution found')
 
-    def is_valid_matchup_add(self, team_id, round_index, matchup_index, team_index):
+    def process_addition(self, team_id: types.IDType, round_index: int, matchup_index: int, team_index: int):
 
-        team = self.teams[team_id]
+        self.available_team_ids_by_round[round_index].remove(team_id)
+        self.schedule[round_index][matchup_index][team_index] = team_id
 
-        # make sure they haven't played too many games
-        if team.n_matchups > self.constraints['n_matchups']['max']:
-            return False
+        self.teams[team_id].add_to_matchup(
+            [self.teams[team_id] for team_id in self.schedule[round_index][matchup_index][:team_index]])
 
-        # make sure they haven't played these teams too many times
-        for team_index_before in range(team_index):
-            other_team = self.teams[self.schedule[round_index]
-                                    [matchup_index][team_index_before]]
+    def process_removal(self, team_id: types.IDType, round_index: int, matchup_index: int, team_index: int):
 
-        return True
+        self.teams[team_id].remove_from_matchup(
+            [self.teams[team_id] for team_id in self.schedule[round_index][matchup_index][:team_index]])
 
-    def backtrack(self, round_index, matchup_index, team_index):
+        self.schedule[round_index][matchup_index][team_index] = None
+        self.available_team_ids_by_round[round_index].add(team_id)
 
-        if round_index == self.rounds.n:
+    def backtrack(self, round_index: int, matchup_index: int, team_index: int):
+
+        if round_index == self.config['n_rounds']:
             return True
         if matchup_index == self.config['matchups_per_round']:
             return self.backtrack(round_index+1, 0, 0)
-        if team_index == self.config['n_teams']:
+        if team_index == self.config['teams_per_matchup']:
             return self.backtrack(round_index, matchup_index+1, 0)
 
-        for team_id in self.available_teams_by_round[round_index]:
+        if (matchup_index == 0) and (team_index == 0) and (round_index > 0):
+            self.print_round(round_index-1)
+
+        for team_id in self.available_team_ids_by_round[round_index]:
 
             # if is_valid_move
-            if self.is_valid_matchup_add(team_id, round_index, matchup_index, team_index):
+            if self.teams[team_id].is_valid_matchup([self.teams[team_id] for team_id in self.schedule[round_index][matchup_index][:team_index]], self.constraints):
 
                 # add to matchup
                 self.process_addition(
@@ -199,3 +199,22 @@ class Scheduler:
 
         # none of the remaining teams can be placed there
         return False
+
+    def print(self):
+
+        for i in range(self.config['n_rounds']):
+            self.print_round(i)
+
+        for team_id in range(self.config['n_teams']):
+            print('Team ', team_id)
+            print(self.teams[team_id].n_matchups)
+            print(self.teams[team_id].opponent_history)
+            print(self.teams[team_id].locale_count)
+
+    def print_round(self, round):
+
+        print('Round ', round+1)
+        print('------------------')
+
+        for i in range(self.config['matchups_per_round']):
+            print(self.schedule[round][i])
