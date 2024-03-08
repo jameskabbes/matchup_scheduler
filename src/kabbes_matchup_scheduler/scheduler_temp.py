@@ -2,7 +2,7 @@ from typing import TypedDict, Union
 import pathlib
 from dataclasses import dataclass, field
 import pandas as pd
-from kabbes_matchup_scheduler import types, team
+from kabbes_matchup_scheduler import team_temp, types
 import math
 
 
@@ -30,7 +30,7 @@ class Scheduler:
 
     config: SchedulerConfig
     schedule: types.ScheduleType
-    teams: list[team.Team]
+    teams: list[team_temp.Team]
     constraints: types.ConstraintsConfig
     available_team_ids_by_round: list[set[types.IDType]]
 
@@ -65,8 +65,8 @@ class Scheduler:
         # load teams
         self.teams = []
         for i in range(self.config['n_teams']):
-            self.teams.append(team.Team(i,
-                                        self.config['n_teams'], self.config['teams_per_matchup']))
+            self.teams.append(team_temp.Team(i,
+                                             self.config['n_teams'], self.config['teams_per_matchup']))
 
         # load available teams
         self.available_team_ids_by_round: list[set[types.IDType]] = []
