@@ -95,3 +95,29 @@ class Team:
                 return False
 
         return True
+
+    def is_valid_schedule(self, constraints: types.ConstraintsConfig):
+
+        # 1. make sure we hit min number of matchups
+        if self.n_matchups < constraints['n_matchups']['min']:
+            return False
+
+        # 2. make sure we hit min number at each locale
+        for locale_index in self.locale_count:
+            locale_index: types.LocaleIndex
+
+            if self.locale_count[locale_index] < constraints['locale_count']['min']:
+                return False
+
+        # 3. check opponent history
+        for opponent_id in self.opponent_history:
+
+            opponent_id: types.TeamID
+            if self.opponent_history[opponent_id]['count'] < constraints['opponent_history']['count']['min']:
+                return False
+
+            for locale_index in self.opponent_history[opponent_id]['locale']:
+                if self.opponent_history[opponent_id]['locale'][locale_index] < constraints['opponent_history']['locale']['min']:
+                    return False
+
+        return True
