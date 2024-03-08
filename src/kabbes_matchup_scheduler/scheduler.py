@@ -4,6 +4,8 @@ from dataclasses import dataclass, field
 import pandas as pd
 from kabbes_matchup_scheduler import team, types
 import math
+import random
+import time
 
 
 class SchedulerConfig(TypedDict):
@@ -13,6 +15,7 @@ class SchedulerConfig(TypedDict):
     matchups_per_round: Union[int, None]
     round_schedule_attempts: int
     shuffle: bool
+    timeout: float
     export_Path: Union[pathlib.Path, None]
 
 
@@ -21,7 +24,8 @@ DEFAULT_SCHEDULER_CONFIG: SchedulerConfig = {
     'n_rounds': 7,
     'teams_per_matchup': 2,
     'matchups_per_round': None,
-    'shuffle': True,
+    'shuffle': False,
+    'timeout': 5.0,
     'export_Path': pathlib.Path('schedule.csv')
 }
 
@@ -34,7 +38,7 @@ class Scheduler:
     constraints: types.ConstraintsConfig
     available_team_ids_by_round: list[set[types.IDType]]
 
-    def __init__(self, config: SchedulerConfig = {}, **default_config_overwrite):
+    def __init__(self, config: SchedulerConfig = {}, **default_config_overwrite: SchedulerConfig):
 
         # load config
         self.config = config
@@ -69,10 +73,15 @@ class Scheduler:
                                         self.config['n_teams'], self.config['teams_per_matchup']))
 
         # load available teams
-        self.available_team_ids_by_round: list[set[types.IDType]] = []
+        self.available_team_ids_by_round: list[dict[types.IDType, None]] = []
         for i in range(self.config['n_rounds']):
+
+            team_ids_list = list(range(self.config['n_teams']))
+            if self.config['shuffle']:
+                random.shuffle(team_ids_list)
+
             self.available_team_ids_by_round.append(
-                set(list(range(self.config['n_teams']))))
+                {team_id: None for team_id in team_ids_list})
 
         print(self.config)
         self.load_constraints()
@@ -145,16 +154,22 @@ class Scheduler:
 
     def run(self):
 
+        self.start_time = time.time()
+
         if self.backtrack(0, 0, 0):
             print('Found a solution!')
             self.print()
 
         else:
-            print('No solution found')
+            if (time.time() - self.start_time > self.config['timeout']):
+                print('TIMEOUT: No solution found in',
+                      self.config['timeout'], 'seconds')
+            else:
+                print('No solution found')
 
     def process_addition(self, team_id: types.IDType, round_index: int, matchup_index: int, team_index: int):
 
-        self.available_team_ids_by_round[round_index].remove(team_id)
+        del self.available_team_ids_by_round[round_index][team_id]
         self.schedule[round_index][matchup_index][team_index] = team_id
 
         self.teams[team_id].add_to_matchup(
@@ -166,9 +181,12 @@ class Scheduler:
             [self.teams[team_id] for team_id in self.schedule[round_index][matchup_index][:team_index]])
 
         self.schedule[round_index][matchup_index][team_index] = None
-        self.available_team_ids_by_round[round_index].add(team_id)
+        self.available_team_ids_by_round[round_index][team_id] = None
 
     def backtrack(self, round_index: int, matchup_index: int, team_index: int):
+
+        if (time.time() - self.start_time) > self.config['timeout']:
+            return False
 
         if round_index == self.config['n_rounds']:
             for team in self.teams:
@@ -182,22 +200,23 @@ class Scheduler:
         if team_index == self.config['teams_per_matchup']:
             return self.backtrack(round_index, matchup_index+1, 0)
 
-        for team_id in self.available_team_ids_by_round[round_index]:
+        for team_id in range(self.config['n_teams']):
+            if team_id in self.available_team_ids_by_round[round_index]:
 
-            # if is_valid_move
-            if self.teams[team_id].is_valid_matchup([self.teams[team_id] for team_id in self.schedule[round_index][matchup_index][:team_index]], self.constraints):
+                # if is_valid_move
+                if self.teams[team_id].is_valid_matchup([self.teams[team_id] for team_id in self.schedule[round_index][matchup_index][:team_index]], self.constraints):
 
-                # add to matchup
-                self.process_addition(
-                    team_id, round_index, matchup_index, team_index)
+                    # add to matchup
+                    self.process_addition(
+                        team_id, round_index, matchup_index, team_index)
 
-                # proceed down this branch, it is works return true
-                if self.backtrack(round_index, matchup_index, team_index+1):
-                    return True
+                    # proceed down this branch, it is works return true
+                    if self.backtrack(round_index, matchup_index, team_index+1):
+                        return True
 
-                # this branch is a dead end, try other teams in the for loop
-                self.process_removal(team_id, round_index,
-                                     matchup_index, team_index)
+                    # this branch is a dead end, try other teams in the for loop
+                    self.process_removal(team_id, round_index,
+                                         matchup_index, team_index)
 
         # none of the remaining teams can be placed there
         return False
