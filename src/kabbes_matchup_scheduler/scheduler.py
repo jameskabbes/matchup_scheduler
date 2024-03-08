@@ -98,8 +98,8 @@ class Scheduler:
         avg_matchups_per_team: float = self.config['n_rounds'] - \
             (n_byes/self.config['n_teams'])
 
-        min_matchups_per_team: int = math.ceil(avg_matchups_per_team)
-        max_matchups_per_team: int = math.floor(avg_matchups_per_team)
+        min_matchups_per_team: int = math.floor(avg_matchups_per_team)
+        max_matchups_per_team: int = math.ceil(avg_matchups_per_team)
 
         # 1.728, each team should play either 1 or 2 games as home/away/other
         min_locales_per_team: int = math.floor(
@@ -127,7 +127,7 @@ class Scheduler:
                 'min': min_matchups_per_team,
                 'max': max_matchups_per_team,
             },
-            'opponent_count': {
+            'opponent_history': {
                 'count': {
                     'min': min_matchups_per_opponent,
                     'max': max_matchups_per_opponent,
@@ -177,9 +177,6 @@ class Scheduler:
         if team_index == self.config['teams_per_matchup']:
             return self.backtrack(round_index, matchup_index+1, 0)
 
-        if (matchup_index == 0) and (team_index == 0) and (round_index > 0):
-            self.print_round(round_index-1)
-
         for team_id in self.available_team_ids_by_round[round_index]:
 
             # if is_valid_move
@@ -213,8 +210,10 @@ class Scheduler:
 
     def print_round(self, round):
 
+        print('------------------')
         print('Round ', round+1)
         print('------------------')
 
         for i in range(self.config['matchups_per_round']):
             print(self.schedule[round][i])
+        print()

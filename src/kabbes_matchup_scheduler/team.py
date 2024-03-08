@@ -84,14 +84,14 @@ class Team:
             opponent = opponents[opponent_locale]
 
             # for the count
-            if self.opponent_history[opponent.id]['count'] == constraints['opponent_count']['count']['max']:
+            if self.opponent_history[opponent.id]['count'] == constraints['opponent_history']['count']['max']:
                 return False
 
             # and the locale
-            if self.opponent_history[opponent.id]['locale'][self_locale] == constraints['opponent_count']['locale']['max']:
+            if self.opponent_history[opponent.id]['locale'][self_locale] == constraints['opponent_history']['locale']['max']:
                 return False
 
-            if opponent.opponent_history[self.id]['locale'][opponent_locale] == constraints['opponent_count']['locale']['max']:
+            if opponent.opponent_history[self.id]['locale'][opponent_locale] == constraints['opponent_history']['locale']['max']:
                 return False
 
         return True
