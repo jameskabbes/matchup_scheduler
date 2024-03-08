@@ -22,10 +22,13 @@ class Team:
 
         self.opponent_history = {}
         for i in range(n_teams):
-            self.opponent_history[i] = {
-                'count': 0,
-                'locale': {i: 0 for i in range(teams_per_matchup)}
-            }
+
+            # don't include self id in opp history
+            if i != id:
+                self.opponent_history[i] = {
+                    'count': 0,
+                    'locale': {i: 0 for i in range(teams_per_matchup)}
+                }
 
         self.locale_count = {}
         for i in range(teams_per_matchup):
