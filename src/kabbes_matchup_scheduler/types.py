@@ -23,5 +23,5 @@ OpponentCountConfig = TypedDict('OpponentCountConfig', {
 
 class ConstraintsConfig(TypedDict):
     n_matchups: ConstraintConfig
-    opponent_count: OpponentCountConfig
+    opponent_history: OpponentCountConfig
     locale_count: ConstraintConfig
