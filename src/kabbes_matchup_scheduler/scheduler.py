@@ -171,9 +171,14 @@ class Scheduler:
     def backtrack(self, round_index: int, matchup_index: int, team_index: int):
 
         if round_index == self.config['n_rounds']:
+            for team in self.teams:
+                if not team.is_valid_schedule(self.constraints):
+                    return False
             return True
+
         if matchup_index == self.config['matchups_per_round']:
             return self.backtrack(round_index+1, 0, 0)
+
         if team_index == self.config['teams_per_matchup']:
             return self.backtrack(round_index, matchup_index+1, 0)
 
