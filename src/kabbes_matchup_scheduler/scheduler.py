@@ -38,15 +38,15 @@ class Scheduler:
     constraints: types.ConstraintsConfig
     available_team_ids_by_round: list[set[types.IDType]]
 
-    def __init__(self, config: SchedulerConfig = {}, **default_config_overwrite: SchedulerConfig):
+    def __init__(self, overwrite_config: SchedulerConfig = {}, config: SchedulerConfig = {}):
 
         # load config
         self.config = config
         if self.config == {}:
             self.config = DEFAULT_SCHEDULER_CONFIG
 
-        for key in default_config_overwrite:
-            self.config[key] = default_config_overwrite[key]
+        for key in overwrite_config:
+            self.config[key] = overwrite_config[key]
 
         # fill in None values for matchups per round
         if self.config['matchups_per_round'] == None:
@@ -58,7 +58,7 @@ class Scheduler:
                 self.config['matchups_per_round'], self.config['n_teams'] // self.config['teams_per_matchup'])
 
         # load schedule with empty matchups
-        self.schedule: types.Schedule = []
+        self.schedule: types.ScheduleType = []
         for round_num in range(self.config['n_rounds']):
             round = []
             for matchup_num in range(self.config['matchups_per_round']):
