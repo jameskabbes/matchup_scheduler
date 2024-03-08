@@ -1,7 +1,7 @@
-from kabbes_matchup_scheduler.Scheduler import Scheduler
+from kabbes_matchup_scheduler.scheduler import Scheduler
 scheduler = Scheduler(**{
-    'n_teams': 9,
-    'n_rounds': 14,
+    'n_teams': 8,
+    'n_rounds': 6,
     'teams_per_matchup': 2,
     'matchups_per_round': None,
 })

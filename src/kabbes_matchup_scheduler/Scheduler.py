@@ -2,7 +2,7 @@ from typing import TypedDict, Union
 import pathlib
 from dataclasses import dataclass, field
 import pandas as pd
-from kabbes_matchup_scheduler import types, Team
+from kabbes_matchup_scheduler import types, team
 import math
 
 
@@ -46,7 +46,8 @@ class Scheduler:
 
     config: SchedulerConfig
     schedule: types.ScheduleType
-    teams: list[Team.Team]
+    teams: list[team.Team]
+    constraints: ConstraintsConfig
 
     def __init__(self, config: SchedulerConfig = {}, **default_config_overwrite):
 
@@ -74,7 +75,7 @@ class Scheduler:
         # load teams
         self.teams = []
         for i in range(self.config['n_teams']):
-            self.teams.append(Team.Team(
+            self.teams.append(team.Team(
                 self.config['n_teams'], self.config['teams_per_matchup']))
 
         self.load_constraints()
@@ -100,36 +101,45 @@ class Scheduler:
         avg_matchups_per_team: float = self.config['n_rounds'] - \
             (n_byes/self.config['n_teams'])
 
-        # 1.728, each team should play either 1 or 2 games as home/away/etc
-        avg_locales_per_team: float = avg_matchups_per_team / \
-            self.config['teams_per_matchup']
+        min_matchups_per_team: int = math.ceil(avg_matchups_per_team)
+        max_matchups_per_team: int = math.floor(avg_matchups_per_team)
+
+        # 1.728, each team should play either 1 or 2 games as home/away/other
+        min_locales_per_team: int = math.floor(
+            min_matchups_per_team / self.config['teams_per_matchup'])
+        max_locales_per_team: int = math.ceil(
+            max_matchups_per_team / self.config['teams_per_matchup'])
 
         # 0.857, each team should play either 0 or 1 games against each opponent
-        avg_matchups_per_opponent: float = avg_matchups_per_team / \
-            (self.config['n_teams'] - 1)
+        min_matchups_per_opponent: int = math.floor(
+            min_matchups_per_team / self.config['n_teams'])
+        max_matchups_per_opponent: int = math.ceil(
+            max_matchups_per_team / self.config['n_teams'])
 
-        # 0.428, each team should play either 0 or 1 games against each opponent as home/away/etc
-        avg_locales_per_matchups_per_opponent: float = avg_matchups_per_opponent / \
-            self.config['teams_per_matchup']
+        # 0.285, each team should play either 0 or 1 games against each opponent as home/away/other
+        min_locales_per_matchups_per_opponent: int = math.floor(
+            min_matchups_per_opponent / self.config['teams_per_matchup'])
+        max_locales_per_matchups_per_opponent: int = math.ceil(
+            max_matchups_per_opponent / self.config['teams_per_matchup'])
 
         self.constraints: ConstraintsConfig = {
             'n_matchups': {
-                'min': math.floor(avg_matchups_per_team),
-                'max': math.ceil(avg_matchups_per_team),
+                'min': min_matchups_per_team,
+                'max': max_matchups_per_team,
             },
             'opponent_count': {
                 'count': {
-                    'min': math.floor(avg_matchups_per_opponent),
-                    'max': math.ceil(avg_matchups_per_opponent),
+                    'min': min_matchups_per_opponent,
+                    'max': max_matchups_per_opponent,
                 },
                 'locale': {
-                    'min': math.floor(avg_locales_per_matchups_per_opponent),
-                    'max': math.ceil(avg_locales_per_matchups_per_opponent),
+                    'min': min_locales_per_matchups_per_opponent,
+                    'max': max_locales_per_matchups_per_opponent,
                 },
             },
             'locale_count': {
-                'min': math.floor(avg_locales_per_team),
-                'max': math.ceil(avg_locales_per_team),
+                'min': min_locales_per_team,
+                'max': max_locales_per_team,
             }
         }
 
