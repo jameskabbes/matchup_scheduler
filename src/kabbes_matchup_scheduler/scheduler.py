@@ -202,14 +202,14 @@ class Scheduler:
 
     def print(self):
 
-        for i in range(self.config['n_rounds']):
-            self.print_round(i)
-
         for team_id in range(self.config['n_teams']):
             print('Team ', team_id)
             print(self.teams[team_id].n_matchups)
             print(self.teams[team_id].opponent_history)
             print(self.teams[team_id].locale_count)
+
+        for i in range(self.config['n_rounds']):
+            self.print_round(i)
 
     def print_round(self, round):
 
