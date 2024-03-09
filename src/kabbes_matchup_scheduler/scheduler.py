@@ -54,8 +54,9 @@ class Scheduler:
 
         # each team can only play at most 1 time
         else:
-            self.config['matchups_per_round'] = max(
-                self.config['matchups_per_round'], self.config['n_teams'] // self.config['teams_per_matchup'])
+            self.config['matchups_per_round'] = min(max(
+                self.config['matchups_per_round'], self.config['n_teams'] // self.config['teams_per_matchup']),
+                self.config['matchups_per_round'])
 
         # load schedule with empty matchups
         self.schedule: types.ScheduleType = []
@@ -73,15 +74,14 @@ class Scheduler:
                                         self.config['n_teams'], self.config['teams_per_matchup']))
 
         # load available teams
-        self.available_team_ids_by_round: list[dict[types.IDType, None]] = []
+        self.available_team_ids_by_round: list[set[types.IDType]] = []
+        self.order_of_team_ids_by_rounds: list[list[types.IDType]] = []
         for i in range(self.config['n_rounds']):
 
             team_ids_list = list(range(self.config['n_teams']))
-            if self.config['shuffle']:
-                random.shuffle(team_ids_list)
 
-            self.available_team_ids_by_round.append(
-                {team_id: None for team_id in team_ids_list})
+            self.available_team_ids_by_round.append(set(team_ids_list))
+            self.order_of_team_ids_by_rounds.append(team_ids_list)
 
         print(self.config)
         self.load_constraints()
@@ -169,7 +169,7 @@ class Scheduler:
 
     def process_addition(self, team_id: types.IDType, round_index: int, matchup_index: int, team_index: int):
 
-        del self.available_team_ids_by_round[round_index][team_id]
+        self.available_team_ids_by_round[round_index].remove(team_id)
         self.schedule[round_index][matchup_index][team_index] = team_id
 
         self.teams[team_id].add_to_matchup(
@@ -181,7 +181,7 @@ class Scheduler:
             [self.teams[team_id] for team_id in self.schedule[round_index][matchup_index][:team_index]])
 
         self.schedule[round_index][matchup_index][team_index] = None
-        self.available_team_ids_by_round[round_index][team_id] = None
+        self.available_team_ids_by_round[round_index].add(team_id)
 
     def backtrack(self, round_index: int, matchup_index: int, team_index: int):
 
@@ -195,12 +195,23 @@ class Scheduler:
             return True
 
         if matchup_index == self.config['matchups_per_round']:
+
+            # any team that is still available should have priority in the next round
+            if round_index < self.config['n_rounds']-1:
+
+                team_ids_not_used = self.available_team_ids_by_round[round_index]
+                next_round_team_ids = self.available_team_ids_by_round[round_index+1]
+
+                difference = next_round_team_ids - team_ids_not_used
+                self.order_of_team_ids_by_rounds[round_index +
+                                                 1] = list(team_ids_not_used) + list(difference)
+
             return self.backtrack(round_index+1, 0, 0)
 
         if team_index == self.config['teams_per_matchup']:
             return self.backtrack(round_index, matchup_index+1, 0)
 
-        for team_id in range(self.config['n_teams']):
+        for team_id in self.order_of_team_ids_by_rounds[round_index]:
             if team_id in self.available_team_ids_by_round[round_index]:
 
                 # if is_valid_move
