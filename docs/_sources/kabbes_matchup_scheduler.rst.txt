@@ -1,0 +1,37 @@
+kabbes\_matchup\_scheduler package
+==================================
+
+Submodules
+----------
+
+kabbes\_matchup\_scheduler.scheduler module
+-------------------------------------------
+
+.. automodule:: kabbes_matchup_scheduler.scheduler
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+kabbes\_matchup\_scheduler.team module
+--------------------------------------
+
+.. automodule:: kabbes_matchup_scheduler.team
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+kabbes\_matchup\_scheduler.types module
+---------------------------------------
+
+.. automodule:: kabbes_matchup_scheduler.types
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: kabbes_matchup_scheduler
+   :members:
+   :undoc-members:
+   :show-inheritance:
